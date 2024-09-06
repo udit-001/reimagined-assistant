@@ -5,18 +5,17 @@ import os
 import aiofiles
 import google.cloud.texttospeech as tts
 import litellm
+from fastapi import HTTPException
 from google.oauth2 import service_account
-from pydantic import BaseModel
+from openai import OpenAIError
 
 from config import settings
 
+from ..utils.ai_logger import get_logger as get_ai_logger
 from .persona import Persona
 
-logger = logging.getLogger("debug_mode")
+logger = get_ai_logger()
 logger.setLevel(logging.DEBUG if settings.debug_mode else logging.INFO)
-log_handler = logging.StreamHandler()
-log_handler.setFormatter(logging.Formatter("\x1b[33;20mAI DEBUG: \x1b[0m%(message)s"))
-logger.addHandler(log_handler)
 
 
 class Chatbot:
@@ -77,19 +76,25 @@ class Chatbot:
         async with aiofiles.open(input_filename, "rb") as f:
             content = await f.read()
 
-        transcript = await litellm.atranscription(
-            model="groq/distil-whisper-large-v3-en",
-            file=(input_filename, content),
-            temperature=0,
-            response_format="verbose_json",
-        )
+        try:
+            transcript = await litellm.atranscription(
+                model="groq/distil-whisper-large-v3-en",
+                file=(input_filename, content),
+                temperature=0,
+                response_format="verbose_json",
+            )
 
-        user_message = transcript.text.strip()
-        logger.debug(f"Transcription Step: {json.dumps(transcript.json(), indent=4)}")
+            user_message = transcript.text.strip()
+            logger.debug(
+                f"Transcription Step: {json.dumps(transcript.json(), indent=4)}"
+            )
 
-        if any([i["no_speech_prob"] > 0.05 for i in transcript.segments]):
-            print("Silent speech detected")
-            return ""
+            if any([i["no_speech_prob"] > 0.05 for i in transcript.segments]):
+                print("Silent speech detected")
+                return ""
+        except OpenAIError as e:
+            logger.error(f"Error transcribing user's voice: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
 
         return user_message
 
@@ -128,15 +133,19 @@ class Chatbot:
             {"role": "user", "content": self.get_prompt()},
         ]
 
-        stream = await litellm.acompletion(
-            model="groq/llama3-8b-8192", messages=messages, stream=True
-        )
+        try:
+            stream = await litellm.acompletion(
+                model="groq/llama3-8b-8192", messages=messages, stream=True
+            )
 
-        chunks = []
-        async for chunk in stream:
-            chunks.append(chunk)
+            chunks = []
+            async for chunk in stream:
+                chunks.append(chunk)
 
-        streamed_response = litellm.stream_chunk_builder(chunks, messages=messages)
+            streamed_response = litellm.stream_chunk_builder(chunks, messages=messages)
+        except OpenAIError as e:
+            logger.error(f"Error generating LLM response: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
 
         ai_message = streamed_response.choices[0].message.content
 
@@ -156,18 +165,23 @@ class Chatbot:
             {"role": "system", "content": prompt},
         ]
 
-        stream = await litellm.acompletion(
-            model="groq/llama3-8b-8192", messages=messages, stream=True
-        )
+        try:
+            stream = await litellm.acompletion(
+                model="groq/llama3-8b-8192", messages=messages, stream=True
+            )
 
-        chunks = []
-        async for chunk in stream:
-            chunks.append(chunk)
+            chunks = []
+            async for chunk in stream:
+                chunks.append(chunk)
 
-        streamed_response = litellm.stream_chunk_builder(chunks, messages=messages)
+            streamed_response = litellm.stream_chunk_builder(chunks, messages=messages)
 
-        self.current_summary = streamed_response.choices[0].message.content
-        logger.debug(
-            f"Conversation exceeded summary threshold, summarizing previous messages, generated summary: {self.current_summary}"
-        )
+            self.current_summary = streamed_response.choices[0].message.content
+            logger.debug(
+                f"Conversation exceeded summary threshold, summarizing previous messages, generated summary: {self.current_summary}"
+            )
+        except OpenAIError as e:
+            logger.error(f"Error summarizing conversation: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
         self.memory = self.memory[-(self.summary_threshold) :]

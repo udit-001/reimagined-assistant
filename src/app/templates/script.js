@@ -63,7 +63,12 @@ function sendChunkToServer(chunk) {
         method: 'POST',
         body: formData
     })
-        .then(response => response.blob())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status} - ${response.statusText}`);
+            }
+            return response.blob()
+        })
         .then(blob => {
             const url = window.URL.createObjectURL(blob);
             const audio = document.createElement('audio');
