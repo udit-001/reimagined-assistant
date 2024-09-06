@@ -79,7 +79,6 @@ class Chatbot:
         transcript = await litellm.atranscription(
             model="groq/distil-whisper-large-v3-en",
             file=(input_filename, content),
-            # prompt="Specify context or spelling",
             temperature=0,
             response_format="verbose_json",
         )
