@@ -43,6 +43,63 @@ class Chatbot:
             + f"\nAI: "
         )
 
+    async def __generate_llm_response(self):
+        messages = [
+            {"role": "system", "content": self.system_prompt},
+            {"role": "user", "content": self.get_prompt()},
+        ]
+
+        try:
+            stream = await litellm.acompletion(
+                model=settings.llm_model_name, messages=messages, stream=True
+            )
+
+            chunks = []
+            async for chunk in stream:
+                chunks.append(chunk)
+
+            streamed_response = litellm.stream_chunk_builder(chunks, messages=messages)
+        except OpenAIError as e:
+            logger.error(f"Error generating LLM response: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+        ai_message = streamed_response.choices[0].message.content
+
+        logger.debug(
+            f"LLM Response Step: {json.dumps(streamed_response.json(), indent=4)}"
+        )
+        logger.debug(f"AI({self.persona.name}) - {ai_message}")
+        return ai_message
+
+    async def summarize(self):
+        prompt = prompt_manager.get_prompt(
+            "summarization_prompt", {"context": "\n".join(self.memory)}
+        )
+        messages = [
+            {"role": "system", "content": prompt},
+        ]
+
+        try:
+            stream = await litellm.acompletion(
+                model=settings.llm_model_name, messages=messages, stream=True
+            )
+
+            chunks = []
+            async for chunk in stream:
+                chunks.append(chunk)
+
+            streamed_response = litellm.stream_chunk_builder(chunks, messages=messages)
+
+            self.current_summary = streamed_response.choices[0].message.content
+            logger.debug(
+                f"Conversation exceeded summary threshold, summarizing previous messages, generated summary: {self.current_summary}"
+            )
+        except OpenAIError as e:
+            logger.error(f"Error summarizing conversation: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+        self.memory = self.memory[-(self.summary_threshold) :]
+
     async def respond(self, message):
         self.memory.append(f"HUMAN: {message}")
 
@@ -119,58 +176,3 @@ class Chatbot:
             await f.write(response.audio_content)
 
         return filename
-
-    async def __generate_llm_response(self):
-        messages = [
-            {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": self.get_prompt()},
-        ]
-
-        try:
-            stream = await litellm.acompletion(
-                model=settings.llm_model_name, messages=messages, stream=True
-            )
-
-            chunks = []
-            async for chunk in stream:
-                chunks.append(chunk)
-
-            streamed_response = litellm.stream_chunk_builder(chunks, messages=messages)
-        except OpenAIError as e:
-            logger.error(f"Error generating LLM response: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
-
-        ai_message = streamed_response.choices[0].message.content
-
-        logger.debug(
-            f"LLM Response Step: {json.dumps(streamed_response.json(), indent=4)}"
-        )
-        logger.debug(f"AI({self.persona.name}) - {ai_message}")
-        return ai_message
-
-    async def summarize(self):
-        prompt = prompt_manager.get_prompt("summarization_prompt", {"context": "\n".join(self.memory)})
-        messages = [
-            {"role": "system", "content": prompt},
-        ]
-
-        try:
-            stream = await litellm.acompletion(
-                model=settings.llm_model_name, messages=messages, stream=True
-            )
-
-            chunks = []
-            async for chunk in stream:
-                chunks.append(chunk)
-
-            streamed_response = litellm.stream_chunk_builder(chunks, messages=messages)
-
-            self.current_summary = streamed_response.choices[0].message.content
-            logger.debug(
-                f"Conversation exceeded summary threshold, summarizing previous messages, generated summary: {self.current_summary}"
-            )
-        except OpenAIError as e:
-            logger.error(f"Error summarizing conversation: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
-
-        self.memory = self.memory[-(self.summary_threshold) :]
