@@ -18,11 +18,6 @@ log_handler = logging.StreamHandler()
 log_handler.setFormatter(logging.Formatter("\x1b[33;20mAI DEBUG: \x1b[0m%(message)s"))
 logger.addHandler(log_handler)
 
-
-class SilentSpeech(BaseModel):
-    value: bool
-
-
 class Chatbot:
     def __init__(self, persona: Persona, user_id: str):
         self.memory = []
@@ -70,8 +65,8 @@ class Chatbot:
     async def voice_respond(self, input_filename: str):
         user_message = await self.__speech_to_text(input_filename)
 
-        # if os.path.exists(input_filename):
-        #     os.remove(input_filename)
+        if os.path.exists(input_filename):
+            os.remove(input_filename)
 
         ai_response = await self.respond(user_message)
         output_filename = await self.__text_to_speech(ai_response)
