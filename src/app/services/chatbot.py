@@ -78,7 +78,7 @@ class Chatbot:
 
         try:
             transcript = await litellm.atranscription(
-                model="groq/distil-whisper-large-v3-en",
+                model=settings.transcript_model_name,
                 file=(input_filename, content),
                 temperature=0,
                 response_format="verbose_json",
@@ -135,7 +135,7 @@ class Chatbot:
 
         try:
             stream = await litellm.acompletion(
-                model="groq/llama3-8b-8192", messages=messages, stream=True
+                model=settings.llm_model_name, messages=messages, stream=True
             )
 
             chunks = []
@@ -167,7 +167,7 @@ class Chatbot:
 
         try:
             stream = await litellm.acompletion(
-                model="groq/llama3-8b-8192", messages=messages, stream=True
+                model=settings.llm_model_name, messages=messages, stream=True
             )
 
             chunks = []
