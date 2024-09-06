@@ -11,10 +11,10 @@ from openai import OpenAIError
 
 from config import settings
 
-from ..utils.ai_logger import get_logger as get_ai_logger
+from ..utils.ai_logger import logger as ai_logger
 from .persona import Persona
 
-logger = get_ai_logger()
+logger = ai_logger
 logger.setLevel(logging.DEBUG if settings.debug_mode else logging.INFO)
 
 
@@ -88,6 +88,7 @@ class Chatbot:
             logger.debug(
                 f"Transcription Step: {json.dumps(transcript.json(), indent=4)}"
             )
+            logger.debug(f"User ({self.user_id}): {user_message}")
 
             if any([i["no_speech_prob"] > 0.05 for i in transcript.segments]):
                 print("Silent speech detected")
@@ -114,6 +115,7 @@ class Chatbot:
         audio_config = tts.AudioConfig(audio_encoding=tts.AudioEncoding.LINEAR16)
         text_input = tts.SynthesisInput(text=message)
 
+        logger.debug(f"Speech Synthesis Step running...")
         response = await client.synthesize_speech(
             input=text_input,
             voice=voice_params,
@@ -121,9 +123,8 @@ class Chatbot:
         )
 
         async with aiofiles.open(filename, "wb") as f:
+            ai_logger.debug(f"Writing AI response audio content to {filename}")
             await f.write(response.audio_content)
-
-        logger.debug(f"Converting AI Response to Audio")
 
         return filename
 
@@ -149,10 +150,10 @@ class Chatbot:
 
         ai_message = streamed_response.choices[0].message.content
 
-        logger.debug(f"AI({self.persona.name}) - {ai_message}")
         logger.debug(
             f"LLM Response Step: {json.dumps(streamed_response.json(), indent=4)}"
         )
+        logger.debug(f"AI({self.persona.name}) - {ai_message}")
         return ai_message
 
     async def summarize(self):

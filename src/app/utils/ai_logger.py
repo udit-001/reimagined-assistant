@@ -29,3 +29,6 @@ def get_logger():
     logger.addHandler(error_handler)
 
     return logger
+
+
+logger = get_logger()

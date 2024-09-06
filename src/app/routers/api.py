@@ -9,6 +9,8 @@ from app.dependencies.chatbot_session import create_chatbot_session
 from app.services.chatbot import Chatbot
 from config import settings
 
+from ..utils.ai_logger import logger as ai_logger
+
 router = APIRouter()
 
 
@@ -46,6 +48,7 @@ async def save_and_process_audio(audio_bytes: bytes, chatbot: Chatbot):
 
     input_filename = f"{settings.media_path}/temp_audio-{chatbot.user_id}.ogg"
     async with aiofiles.open(input_filename, "wb") as f:
+        ai_logger.debug(f"Saving user's audio to {input_filename}")
         await f.write(cleaned_data)
 
     output_filename = await chatbot.voice_respond(input_filename)
