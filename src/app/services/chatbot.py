@@ -18,6 +18,7 @@ log_handler = logging.StreamHandler()
 log_handler.setFormatter(logging.Formatter("\x1b[33;20mAI DEBUG: \x1b[0m%(message)s"))
 logger.addHandler(log_handler)
 
+
 class Chatbot:
     def __init__(self, persona: Persona, user_id: str):
         self.memory = []
@@ -93,7 +94,7 @@ class Chatbot:
         return user_message
 
     async def __text_to_speech(self, message: str):
-        filename = f"output-{self.user_id}.wav"
+        filename = f"{settings.media_path}/output-{self.user_id}.wav"
 
         credentials = service_account.Credentials.from_service_account_file(
             settings.google_service_credenitals_file_path
