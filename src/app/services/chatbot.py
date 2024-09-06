@@ -102,7 +102,7 @@ class Chatbot:
         filename = f"output-{self.user_id}.wav"
 
         credentials = service_account.Credentials.from_service_account_file(
-            "service_credentials.json"
+            settings.google_service_credenitals_file_path
         )
         client = tts.TextToSpeechAsyncClient(credentials=credentials)
 
