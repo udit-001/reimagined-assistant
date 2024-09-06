@@ -1,0 +1,149 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80vh;
+    background-color: #f0f0f0;
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    text-align: center;
+}
+
+.profile {
+    margin-bottom: 20px;
+}
+
+.profile-photo {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.name {
+    font-size: 24px;
+    margin: 10px 0;
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.btn {
+    padding: 8px 10px;
+    border: none;
+    border-radius: 5px;
+    color: #fff;
+    background-color: #007bff;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.roundBtn {
+    border-radius: 100px;
+}
+
+.btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+
+.image-container {
+    display: inline-block;
+    border-radius: 50%;
+    /* Makes the border round */
+    position: relative;
+}
+
+.image-container.blinking-border::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    /* Adjust according to border thickness */
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+    border: 5px solid red;
+    /* Border thickness and color */
+    border-radius: 50%;
+    /* Keeps the border round */
+    animation: blink-border 1s infinite;
+    /* Apply blinking animation */
+    pointer-events: none;
+    /* Prevents the border from blocking interactions with the image */
+    box-sizing: border-box;
+    /* Ensures the border size is calculated correctly */
+}
+
+.image-container img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    display: block;
+    position: relative;
+    z-index: 1;
+}
+
+.image-container.blinking-border::before {
+    display: block;
+    /* Shows the border when the class is added */
+    animation: blink 1s infinite;
+    /* Apply blinking animation */
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.3;
+    }
+}
+
+.agent-selection {
+    margin: 20px 0;
+}
+
+.agent-selection label {
+    margin-right: 10px;
+}
+
+.agent-selection select {
+    padding: 5px;
+    font-size: 16px;
+}
+
+.loading-message {
+    display: none;
+    font-size: 18px;
+    color: #333;
+    margin-top: 20px;
+    margin-bottom: 12px;
+}
+
+.error-message {
+    display: none;
+    font-size: 18px;
+    color: red;
+    margin-top: 20px;
+    margin-bottom: 12px;
+}
+
+.error-message.show {
+    display: block;
+}
+
+.loading-message.show {
+    display: block;
+    /* Show the message */
+    animation: blink 1s infinite;
+}
