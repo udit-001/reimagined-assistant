@@ -15,6 +15,7 @@ from silero_vad import get_speech_timestamps, load_silero_vad, read_audio
 from config import settings
 
 from ..utils.ai_logger import logger as ai_logger
+from .ai.llm import llm_service
 from .persona import Persona
 from .prompts import prompt_manager
 
@@ -62,32 +63,15 @@ class Chatbot:
             + f"\nAI: "
         )
 
-    async def __generate_llm_response(self):
+    async def __generate_ai_response(self):
         messages = [
             {"role": "system", "content": self.system_prompt},
             {"role": "user", "content": self.get_prompt()},
         ]
-
-        try:
-            stream = await litellm.acompletion(
-                model=settings.llm_model_name, messages=messages, stream=True
-            )
-
-            chunks = []
-            async for chunk in stream:
-                chunks.append(chunk)
-
-            streamed_response = litellm.stream_chunk_builder(chunks, messages=messages)
-        except OpenAIError as e:
-            logger.error(f"Error generating LLM response: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
-
-        ai_message = streamed_response.choices[0].message.content
-
-        logger.debug(f"AI({self.persona.name}) - {ai_message}")
-        logger.debug(
-            f"LLM Response Step: {json.dumps(json.loads(streamed_response.model_dump_json()), indent=4)}"
+        ai_message = await llm_service.chat_completion(
+            messages, step_name="LLM Response Step"
         )
+        logger.debug(f"AI({self.persona.name}) - {ai_message}")
         return ai_message
 
     async def summarize(self):
@@ -98,28 +82,13 @@ class Chatbot:
             {"role": "system", "content": prompt},
         ]
 
-        try:
-            stream = await litellm.acompletion(
-                model=settings.llm_model_name, messages=messages, stream=True
-            )
+        logger.debug(
+            f"Conversation exceeded summary threshold, summarizing previous messages"
+        )
 
-            chunks = []
-            async for chunk in stream:
-                chunks.append(chunk)
-
-            streamed_response = litellm.stream_chunk_builder(chunks, messages=messages)
-
-            self.current_summary = streamed_response.choices[0].message.content
-            logger.debug(
-                f"Conversation exceeded summary threshold, summarizing previous messages"
-            )
-            logger.debug(
-                f"LLM Response Step (Summarization): {json.dumps(json.loads(streamed_response.model_dump_json()), indent=4)}"
-            )
-
-        except OpenAIError as e:
-            logger.error(f"Error summarizing conversation: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+        self.current_summary = await llm_service.chat_completion(
+            messages, step_name="LLM Response Step (Summarization)"
+        )
 
         self.memory = self.memory[-(self.summary_threshold) :]
 
@@ -135,22 +104,11 @@ class Chatbot:
             }
         ]
 
-        stream = await litellm.acompletion(
-            model=settings.llm_model_name, messages=messages, stream=True
+        ai_message = await llm_service.chat_completion(
+            messages, step_name="LLM Response Step (Silent Speech)"
         )
-
-        chunks = []
-        async for chunk in stream:
-            chunks.append(chunk)
-
-        streamed_response = litellm.stream_chunk_builder(chunks, messages=messages)
-        ai_message = streamed_response.choices[0].message.content
         self.memory.append(f"AI: {ai_message}")
-
         logger.debug(f"AI({self.persona.name}) - {ai_message}")
-        logger.debug(
-            f"LLM Response Step (Silent Speech): {json.dumps(json.loads(streamed_response.model_dump_json()), indent=4)}"
-        )
         return ai_message
 
     async def respond(self, message):
@@ -162,7 +120,7 @@ class Chatbot:
         if message == "":
             ai_response = await self.__silent_speech_response()
         else:
-            ai_response = await self.__generate_llm_response()
+            ai_response = await self.__generate_ai_response()
 
         self.memory.append(f"AI: {ai_response}")
 
