@@ -7,6 +7,7 @@ import google.cloud.texttospeech as tts
 import litellm
 from fastapi import HTTPException
 from fastapi.concurrency import run_in_threadpool
+from google.api_core import exceptions as google_exceptions
 from google.oauth2 import service_account
 from openai import OpenAIError
 from silero_vad import get_speech_timestamps, load_silero_vad, read_audio
@@ -219,13 +220,18 @@ class Chatbot:
         audio_config = tts.AudioConfig(audio_encoding=tts.AudioEncoding.LINEAR16)
         text_input = tts.SynthesisInput(text=message)
 
-        logger.debug(f"Speech Synthesis Step running...")
-        response = await client.synthesize_speech(
-            input=text_input,
-            voice=voice_params,
-            audio_config=audio_config,
-        )
-
+        try:
+            logger.debug(f"Speech Synthesis Step running...")
+            response = await client.synthesize_speech(
+                input=text_input,
+                voice=voice_params,
+                audio_config=audio_config,
+            )
+        except google_exceptions.Unauthenticated as e:
+            logger.error(
+                f"Error transcribing user's voice: Please verify that your service credentials are correct and have the required permissions."
+            )
+            raise HTTPException(status_code=500, detail=str(e))
         async with aiofiles.open(filename, "wb") as f:
             ai_logger.debug(f"Writing AI response audio content to {filename}")
             await f.write(response.audio_content)
