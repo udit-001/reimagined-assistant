@@ -25,7 +25,7 @@ logger.setLevel(logging.DEBUG if settings.debug_mode else logging.INFO)
 class Chatbot:
     def __init__(self, persona: Persona, user_id: str):
         self.memory = []
-        self.summary_threshold = 2
+        self.summary_threshold = 10
         self.current_summary = ""
         self.persona = persona
         self.user_id = user_id
