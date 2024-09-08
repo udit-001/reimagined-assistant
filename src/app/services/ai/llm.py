@@ -26,7 +26,7 @@ class LLMService:
                 f"{step_name}: {json.dumps(json.loads(streamed_response.model_dump_json()), indent=4)}"
             )
         except OpenAIError as e:
-            logger.error(f"Error generating LLM response: {e}")
+            logger.error(f"({step_name}) Error generating LLM response: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
         return streamed_response.choices[0].message.content

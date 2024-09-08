@@ -14,7 +14,9 @@ from config import settings
 
 class SpeechConversionService:
 
-    async def text_to_speech(self, text: str, output_file: str, voice_name: str):
+    async def text_to_speech(
+        self, text: str, output_file: str, voice_name: str, step_name: str
+    ):
         credentials = service_account.Credentials.from_service_account_file(
             settings.google_service_credenitals_file_path
         )
@@ -37,12 +39,14 @@ class SpeechConversionService:
             )
         except google_exceptions.Unauthenticated as e:
             logger.error(
-                f"Error synthesizing ai's voice: Please verify that your service credentials are correct and have the required permissions."
+                f"{step_name} Error synthesizing ai's voice: Please verify that your service credentials are correct and have the required permissions."
             )
             raise HTTPException(status_code=500, detail=str(e))
 
         async with aiofiles.open(output_file, "wb") as f:
-            logger.debug(f"Writing AI response audio content to {output_file}")
+            logger.debug(
+                f"{step_name} Writing AI response audio content to {output_file}"
+            )
             await f.write(response.audio_content)
 
         return output_file
@@ -63,7 +67,7 @@ class SpeechConversionService:
             logger.debug(f"{step_name}: {json.dumps(transcript.json(), indent=4)}")
 
         except OpenAIError as e:
-            logger.error(f"Error transcribing user's voice: {e}")
+            logger.error(f"{step_name} Error transcribing user's voice: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
         return user_message

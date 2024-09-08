@@ -31,7 +31,9 @@ class Chatbot:
         return f"<Chatbot ({self.persona.name}): {self.user_id}>"
 
     def __is_silent_audio(self, filename):
-        ai_logger.debug("Checking user's audio for silence using Silero VAD")
+        ai_logger.debug(
+            f"User({self.user_id}): Checking user's audio for silence using Silero VAD"
+        )
         model = load_silero_vad()
         wav = read_audio(filename)
         speech_timestamps = get_speech_timestamps(wav, model)
@@ -40,7 +42,7 @@ class Chatbot:
             return False
 
         ai_logger.debug(
-            "No speech detected in user's audio, skipping transcription step"
+            f"User({self.user_id}): No speech detected in user's audio, skipping transcription step"
         )
         return True
 
@@ -62,9 +64,9 @@ class Chatbot:
             {"role": "user", "content": self.get_prompt()},
         ]
         ai_message = await llm_service.chat_completion(
-            messages, step_name="LLM Response Step"
+            messages, step_name=f"User({self.user_id}): LLM Response Step"
         )
-        logger.debug(f"AI({self.persona.name}) - {ai_message}")
+        logger.debug(f"User({self.user_id}): AI({self.persona.name}) - {ai_message}")
         return ai_message
 
     async def summarize(self):
@@ -80,7 +82,8 @@ class Chatbot:
         )
 
         self.current_summary = await llm_service.chat_completion(
-            messages, step_name="LLM Response Step (Summarization)"
+            messages,
+            step_name=f"User({self.user_id}): LLM Response Step (Summarization)",
         )
 
         self.memory = self.memory[-(self.summary_threshold) :]
@@ -98,10 +101,11 @@ class Chatbot:
         ]
 
         ai_message = await llm_service.chat_completion(
-            messages, step_name="LLM Response Step (Silent Speech)"
+            messages,
+            step_name=f"User({self.user_id}): LLM Response Step (Silent Speech)",
         )
         self.memory.append(f"AI: {ai_message}")
-        logger.debug(f"AI({self.persona.name}) - {ai_message}")
+        logger.debug(f"User({self.user_id}): AI({self.persona.name}) - {ai_message}")
         return ai_message
 
     async def respond(self, message):
@@ -135,17 +139,19 @@ class Chatbot:
             return ""
 
         user_message = await speech_service.speech_to_text(
-            input_filename, step_name="Transcription Service"
+            input_filename, step_name=f"User({self.user_id}): Transcription Service"
         )
 
-        logger.debug(f"User ({self.user_id}): {user_message}")
+        logger.debug(f"User({self.user_id}): {user_message}")
 
         return user_message
 
     async def __text_to_speech(self, message: str):
         filename = f"{settings.media_path}/output-{self.user_id}.wav"
 
-        logger.debug(f"Speech Synthesis Step running...")
-        await speech_service.text_to_speech(message, filename, self.persona.voice)
+        logger.debug(f"User({self.user_id}): Speech Synthesis Step running...")
+        await speech_service.text_to_speech(
+            message, filename, self.persona.voice, f"User({self.user_id}):"
+        )
 
         return filename
