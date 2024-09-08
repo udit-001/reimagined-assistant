@@ -5,18 +5,18 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class GroqCompletionModelEnum(str, Enum):
-    llama_8b = "groq/llama-3.1-8b-instant"
-    llama_70b = "groq/llama-3.1-70b-versatile"
-    llama_3_8b = "groq/llama3-8b-8192"
-    llama_3_70b = "groq/llama3-70b-8192"
-    llama_2 = "groq/llama2-70b-4096"
-    mixtral_8x7b = "groq/mixtral-8x7b-32768"
-    gemma_7b = "groq/gemma-7b-it"
+    LLAMA_8B = "groq/llama-3.1-8b-instant"
+    LLAMA_70B = "groq/llama-3.1-70b-versatile"
+    LLAMA_3_8B = "groq/llama3-8b-8192"
+    LLAMA_3_70B = "groq/llama3-70b-8192"
+    LLAMA_2 = "groq/llama2-70b-4096"
+    MIXTRAL_8X7B = "groq/mixtral-8x7b-32768"
+    GEMMA_7B = "groq/gemma-7b-it"
 
 
 class GroqTranscriptionModelEnum(str, Enum):
-    distill_whisper = "groq/distil-whisper-large-v3-en"
-    whisper_large = "groq/whisper-large-v3"
+    DISTILL_WHISPER = "groq/distil-whisper-large-v3-en"
+    WHISPER_LARGE = "groq/whisper-large-v3"
 
 
 class Settings(BaseSettings):
@@ -24,9 +24,9 @@ class Settings(BaseSettings):
     debug_mode: bool = False
     google_service_credenitals_file_path: FilePath
     media_path: DirectoryPath = "media"
-    llm_model_name: GroqCompletionModelEnum = GroqCompletionModelEnum.llama_3_8b
+    llm_model_name: GroqCompletionModelEnum = GroqCompletionModelEnum.LLAMA_3_8B
     transcript_model_name: GroqTranscriptionModelEnum = (
-        GroqTranscriptionModelEnum.distill_whisper
+        GroqTranscriptionModelEnum.DISTILL_WHISPER
     )
 
     model_config = SettingsConfigDict(env_file=".env")
