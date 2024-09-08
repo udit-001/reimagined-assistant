@@ -6,8 +6,10 @@ import aiofiles
 import google.cloud.texttospeech as tts
 import litellm
 from fastapi import HTTPException
+from fastapi.concurrency import run_in_threadpool
 from google.oauth2 import service_account
 from openai import OpenAIError
+from silero_vad import get_speech_timestamps, load_silero_vad, read_audio
 
 from config import settings
 
@@ -26,10 +28,22 @@ class Chatbot:
         self.current_summary = ""
         self.persona = persona
         self.user_id = user_id
-        self.system_prompt = prompt_manager.get_prompt(persona.name)
+        self.system_prompt = prompt_manager.get_prompt(
+            "system_prompt", {"persona": persona.name}
+        )
 
     def __repr__(self) -> str:
         return f"<Chatbot ({self.persona.name}): {self.user_id}>"
+
+    def __is_silent_audio(self, filename):
+        model = load_silero_vad()
+        wav = read_audio(filename)
+        speech_timestamps = get_speech_timestamps(wav, model)
+        if len(speech_timestamps) > 0:
+            return False
+        else:
+            ai_logger.debug("No speech detected in user's audio")
+            return True
 
     def set_system_prompt(self, prompt: str):
         self.system_prompt = prompt
@@ -100,13 +114,40 @@ class Chatbot:
 
         self.memory = self.memory[-(self.summary_threshold) :]
 
+    async def __check_for_silence(self, input_file):
+        response = await run_in_threadpool(self.__is_silent_audio, input_file)
+        return response
+
+    async def __silent_speech_response(self):
+        messages = [
+            {
+                "role": "system",
+                "content": prompt_manager.get_prompt("silent_prompt"),
+            }
+        ]
+
+        stream = await litellm.acompletion(
+            model=settings.llm_model_name, messages=messages, stream=True
+        )
+
+        chunks = []
+        async for chunk in stream:
+            chunks.append(chunk)
+
+        streamed_response = litellm.stream_chunk_builder(chunks, messages=messages)
+        return streamed_response.choices[0].message.content
+
     async def respond(self, message):
         self.memory.append(f"HUMAN: {message}")
 
         if len(self.memory) > self.summary_threshold:
             await self.summarize()
 
-        ai_response = await self.__generate_llm_response()
+        if message == "":
+            ai_response = await self.__silent_speech_response()
+        else:
+            ai_response = await self.__generate_llm_response()
+
         self.memory.append(f"AI: {ai_response}")
 
         return ai_response
@@ -139,8 +180,7 @@ class Chatbot:
             )
             logger.debug(f"User ({self.user_id}): {user_message}")
 
-            if any([i["no_speech_prob"] > 0.05 for i in transcript.segments]):
-                print("Silent speech detected")
+            if await self.__check_for_silence(input_filename):
                 return ""
         except OpenAIError as e:
             logger.error(f"Error transcribing user's voice: {e}")

@@ -1,12 +1,23 @@
+from contextlib import asynccontextmanager
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from silero_vad import load_silero_vad
 
 from app.routers import api, ui
+from app.utils.ai_logger import logger
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.debug("Loading silero vad models...")
+    model = load_silero_vad()
+    yield
 
 
 def create_app():
-    app = FastAPI(title="Voicebot API", version="1.0")
+    app = FastAPI(title="Voicebot API", version="1.0", lifespan=lifespan)
 
     origins = [
         "http://localhost",
