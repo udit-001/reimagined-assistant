@@ -1,21 +1,14 @@
-import json
 import logging
 import os
 
-import aiofiles
-import google.cloud.texttospeech as tts
-import litellm
-from fastapi import HTTPException
 from fastapi.concurrency import run_in_threadpool
-from google.api_core import exceptions as google_exceptions
-from google.oauth2 import service_account
-from openai import OpenAIError
 from silero_vad import get_speech_timestamps, load_silero_vad, read_audio
 
 from config import settings
 
 from ..utils.ai_logger import logger as ai_logger
 from .ai.llm import llm_service
+from .ai.speech_conversion_service import speech_service
 from .persona import Persona
 from .prompts import prompt_manager
 
@@ -137,62 +130,22 @@ class Chatbot:
         return output_filename
 
     async def __speech_to_text(self, input_filename: str):
-        async with aiofiles.open(input_filename, "rb") as f:
-            content = await f.read()
 
         if await self.__check_for_silence(input_filename):
             return ""
 
-        try:
-            transcript = await litellm.atranscription(
-                model=settings.transcript_model_name,
-                file=(input_filename, content),
-                temperature=0,
-                response_format="verbose_json",
-            )
+        user_message = await speech_service.speech_to_text(
+            input_filename, step_name="Transcription Service"
+        )
 
-            user_message = transcript.text.strip()
-            logger.debug(
-                f"Transcription Step: {json.dumps(transcript.json(), indent=4)}"
-            )
-            logger.debug(f"User ({self.user_id}): {user_message}")
-
-        except OpenAIError as e:
-            logger.error(f"Error transcribing user's voice: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+        logger.debug(f"User ({self.user_id}): {user_message}")
 
         return user_message
 
     async def __text_to_speech(self, message: str):
         filename = f"{settings.media_path}/output-{self.user_id}.wav"
 
-        credentials = service_account.Credentials.from_service_account_file(
-            settings.google_service_credenitals_file_path
-        )
-        client = tts.TextToSpeechAsyncClient(credentials=credentials)
-
-        language_code = "en-US"
-
-        voice_params = tts.VoiceSelectionParams(
-            language_code=language_code, name=self.persona.voice
-        )
-        audio_config = tts.AudioConfig(audio_encoding=tts.AudioEncoding.LINEAR16)
-        text_input = tts.SynthesisInput(text=message)
-
-        try:
-            logger.debug(f"Speech Synthesis Step running...")
-            response = await client.synthesize_speech(
-                input=text_input,
-                voice=voice_params,
-                audio_config=audio_config,
-            )
-        except google_exceptions.Unauthenticated as e:
-            logger.error(
-                f"Error synthesizing ai's voice: Please verify that your service credentials are correct and have the required permissions."
-            )
-            raise HTTPException(status_code=500, detail=str(e))
-        async with aiofiles.open(filename, "wb") as f:
-            ai_logger.debug(f"Writing AI response audio content to {filename}")
-            await f.write(response.audio_content)
+        logger.debug(f"Speech Synthesis Step running...")
+        await speech_service.text_to_speech(message, filename, self.persona.voice)
 
         return filename
