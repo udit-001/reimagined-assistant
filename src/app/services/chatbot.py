@@ -24,7 +24,7 @@ logger.setLevel(logging.DEBUG if settings.debug_mode else logging.INFO)
 class Chatbot:
     def __init__(self, persona: Persona, user_id: str):
         self.memory = []
-        self.summary_threshold = 10
+        self.summary_threshold = 2
         self.current_summary = ""
         self.persona = persona
         self.user_id = user_id
@@ -36,13 +36,16 @@ class Chatbot:
         return f"<Chatbot ({self.persona.name}): {self.user_id}>"
 
     def __is_silent_audio(self, filename):
+        ai_logger.debug("Checking user's audio for silence using Silero VAD")
         model = load_silero_vad()
         wav = read_audio(filename)
         speech_timestamps = get_speech_timestamps(wav, model)
         if len(speech_timestamps) > 0:
             return False
         else:
-            ai_logger.debug("No speech detected in user's audio")
+            ai_logger.debug(
+                "No speech detected in user's audio, skipping transcription step"
+            )
             return True
 
     def set_system_prompt(self, prompt: str):
@@ -79,10 +82,10 @@ class Chatbot:
 
         ai_message = streamed_response.choices[0].message.content
 
-        logger.debug(
-            f"LLM Response Step: {json.dumps(streamed_response.json(), indent=4)}"
-        )
         logger.debug(f"AI({self.persona.name}) - {ai_message}")
+        logger.debug(
+            f"LLM Response Step: {json.dumps(json.loads(streamed_response.model_dump_json()), indent=4)}"
+        )
         return ai_message
 
     async def summarize(self):
@@ -106,8 +109,12 @@ class Chatbot:
 
             self.current_summary = streamed_response.choices[0].message.content
             logger.debug(
-                f"Conversation exceeded summary threshold, summarizing previous messages, generated summary: {self.current_summary}"
+                f"Conversation exceeded summary threshold, summarizing previous messages"
             )
+            logger.debug(
+                f"LLM Response Step (Summarization): {json.dumps(json.loads(streamed_response.model_dump_json()), indent=4)}"
+            )
+
         except OpenAIError as e:
             logger.error(f"Error summarizing conversation: {e}")
             raise HTTPException(status_code=500, detail=str(e))
@@ -135,7 +142,14 @@ class Chatbot:
             chunks.append(chunk)
 
         streamed_response = litellm.stream_chunk_builder(chunks, messages=messages)
-        return streamed_response.choices[0].message.content
+        ai_message = streamed_response.choices[0].message.content
+        self.memory.append(f"AI: {ai_message}")
+
+        logger.debug(f"AI({self.persona.name}) - {ai_message}")
+        logger.debug(
+            f"LLM Response Step (Silent Speech): {json.dumps(json.loads(streamed_response.model_dump_json()), indent=4)}"
+        )
+        return ai_message
 
     async def respond(self, message):
         self.memory.append(f"HUMAN: {message}")
@@ -166,6 +180,9 @@ class Chatbot:
         async with aiofiles.open(input_filename, "rb") as f:
             content = await f.read()
 
+        if await self.__check_for_silence(input_filename):
+            return ""
+
         try:
             transcript = await litellm.atranscription(
                 model=settings.transcript_model_name,
@@ -180,8 +197,6 @@ class Chatbot:
             )
             logger.debug(f"User ({self.user_id}): {user_message}")
 
-            if await self.__check_for_silence(input_filename):
-                return ""
         except OpenAIError as e:
             logger.error(f"Error transcribing user's voice: {e}")
             raise HTTPException(status_code=500, detail=str(e))
