@@ -11,7 +11,7 @@ from config import settings
 
 class LLMService:
 
-    async def chat_completion(self, messages: List[dict[str:str]], step_name: str):
+    async def chat_completion(self, messages: List[dict[str, str]], step_name: str):
         try:
             stream = await litellm.acompletion(
                 model=settings.llm_model_name, messages=messages, stream=True
