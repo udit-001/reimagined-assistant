@@ -5,7 +5,7 @@ class PromptManager:
     def __init__(self, templates: dict) -> None:
         self.prompt_templates = templates
 
-    def get_prompt(self, prompt_name: str, context: dict) -> str:
+    def get_prompt(self, prompt_name: str, context: dict = {}) -> str:
         prompt_template = self.prompt_templates.get(prompt_name)
         if prompt_template:
             return Template(prompt_template).render(**context)
