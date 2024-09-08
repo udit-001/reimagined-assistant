@@ -229,7 +229,7 @@ class Chatbot:
             )
         except google_exceptions.Unauthenticated as e:
             logger.error(
-                f"Error transcribing user's voice: Please verify that your service credentials are correct and have the required permissions."
+                f"Error synthesizing ai's voice: Please verify that your service credentials are correct and have the required permissions."
             )
             raise HTTPException(status_code=500, detail=str(e))
         async with aiofiles.open(filename, "wb") as f:
