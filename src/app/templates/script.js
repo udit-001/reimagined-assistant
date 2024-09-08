@@ -67,7 +67,8 @@ function sendChunkToServer(chunk) {
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status} - ${response.statusText}`);
             }
-            return response.blob()
+            showErrorMessage(false);
+            return response.blob();
         })
         .then(blob => {
             const url = window.URL.createObjectURL(blob);
