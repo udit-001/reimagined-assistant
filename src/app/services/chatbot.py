@@ -41,13 +41,14 @@ class Chatbot:
         model = load_silero_vad()
         wav = read_audio(filename)
         speech_timestamps = get_speech_timestamps(wav, model)
+
         if len(speech_timestamps) > 0:
             return False
-        else:
-            ai_logger.debug(
-                "No speech detected in user's audio, skipping transcription step"
-            )
-            return True
+
+        ai_logger.debug(
+            "No speech detected in user's audio, skipping transcription step"
+        )
+        return True
 
     def set_system_prompt(self, prompt: str):
         self.system_prompt = prompt
