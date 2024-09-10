@@ -57,7 +57,6 @@ body {
 .image-container {
     display: inline-block;
     border-radius: 50%;
-    /* Makes the border round */
     position: relative;
 }
 
@@ -65,20 +64,14 @@ body {
     content: '';
     position: absolute;
     top: -5px;
-    /* Adjust according to border thickness */
     left: -5px;
     right: -5px;
     bottom: -5px;
     border: 5px solid red;
-    /* Border thickness and color */
     border-radius: 50%;
-    /* Keeps the border round */
     animation: blink-border 1s infinite;
-    /* Apply blinking animation */
     pointer-events: none;
-    /* Prevents the border from blocking interactions with the image */
     box-sizing: border-box;
-    /* Ensures the border size is calculated correctly */
 }
 
 .image-container img {
@@ -92,9 +85,7 @@ body {
 
 .image-container.blinking-border::before {
     display: block;
-    /* Shows the border when the class is added */
     animation: blink 1s infinite;
-    /* Apply blinking animation */
 }
 
 @keyframes blink {
@@ -144,6 +135,5 @@ body {
 
 .loading-message.show {
     display: block;
-    /* Show the message */
     animation: blink 1s infinite;
 }
