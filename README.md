@@ -14,7 +14,7 @@ The voice assistant is designed to handle queries related to Chime and assist us
 - Maintain conversation context and handle follow-up questions using an in-memory cache.
 - Provide each user with a separate session to ensure private conversations.
 - Include a debug mode, configurable via the `DEBUG_MODE` environment variable, which logs LLM outputs for troubleshooting.
-- Optional Feature: Utilize voice activity detection (VAD) with the Silero VAD model to filter out silent audio and respond appropriately. This feature can be enabled by installing the `silero_vad` Python package. Due to deployment constraints, it is optional.
+- Optional Feature: Utilize voice activity detection (VAD) with the [Silero VAD](https://github.com/snakers4/silero-vad) model to filter out silent audio and respond appropriately. This feature can be enabled by installing the `silero_vad` Python package. Due to deployment constraints, it is optional.
 
 ### Technical Details
 
