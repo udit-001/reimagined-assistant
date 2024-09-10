@@ -2,11 +2,11 @@ import logging
 import os
 
 from fastapi.concurrency import run_in_threadpool
-from silero_vad import get_speech_timestamps, load_silero_vad, read_audio
 
 from config import settings
 
 from ..utils.ai_logger import logger as ai_logger
+from ..utils.check_package import is_package_installed
 from .ai.llm import llm_service
 from .ai.speech_conversion_service import speech_service
 from .persona import Persona
@@ -34,6 +34,9 @@ class Chatbot:
         ai_logger.debug(
             f"User({self.user_id}): Checking user's audio for silence using Silero VAD"
         )
+
+        from silero_vad import get_speech_timestamps, load_silero_vad, read_audio
+
         model = load_silero_vad()
         wav = read_audio(filename)
         speech_timestamps = get_speech_timestamps(wav, model)
@@ -135,8 +138,9 @@ class Chatbot:
 
     async def __speech_to_text(self, input_filename: str):
 
-        if await self.__check_for_silence(input_filename):
-            return ""
+        if is_package_installed("silero_vad") == True:
+            if await self.__check_for_silence(input_filename):
+                return ""
 
         user_message = await speech_service.speech_to_text(
             input_filename, step_name=f"User({self.user_id}): Transcription Service"
