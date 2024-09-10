@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import DirectoryPath, FilePath
+from pydantic import DirectoryPath
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,7 +22,7 @@ class GroqTranscriptionModelEnum(str, Enum):
 class Settings(BaseSettings):
     groq_api_key: str
     debug_mode: bool = False
-    google_service_credenitals_file_path: FilePath
+    google_service_credentials: str
     media_path: DirectoryPath = "media"
     llm_model_name: GroqCompletionModelEnum = GroqCompletionModelEnum.LLAMA_3_8B
     transcript_model_name: GroqTranscriptionModelEnum = (

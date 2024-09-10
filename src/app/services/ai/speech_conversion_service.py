@@ -17,8 +17,8 @@ class SpeechConversionService:
     async def text_to_speech(
         self, text: str, output_file: str, voice_name: str, step_name: str
     ):
-        credentials = service_account.Credentials.from_service_account_file(
-            settings.google_service_credenitals_file_path
+        credentials = service_account.Credentials.from_service_account_info(
+            json.loads(settings.google_service_credentials)
         )
 
         client = tts.TextToSpeechAsyncClient(credentials=credentials)
