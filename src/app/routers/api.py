@@ -46,7 +46,7 @@ async def process_audio_data(audio_data: List[bytes], chatbot: Chatbot):
 async def save_and_process_audio(audio_bytes: bytes, chatbot: Chatbot):
     cleaned_data = remove_headers(audio_bytes)
 
-    input_filename = f"{settings.media_path}/temp_audio-{chatbot.user_id}.ogg"
+    input_filename = os.path.join(settings.media_path, f"temp_audio-{chatbot.user_id}.ogg")
     async with aiofiles.open(input_filename, "wb") as f:
         ai_logger.debug(f"User({chatbot.user_id}): Saving user's audio to {input_filename}")
         await f.write(cleaned_data)

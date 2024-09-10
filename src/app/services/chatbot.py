@@ -147,7 +147,7 @@ class Chatbot:
         return user_message
 
     async def __text_to_speech(self, message: str):
-        filename = f"{settings.media_path}/output-{self.user_id}.wav"
+        filename = os.path.join(settings.media_path, f"output-{self.user_id}.wav")
 
         logger.debug(f"User({self.user_id}): Speech Synthesis Step running...")
         await speech_service.text_to_speech(
