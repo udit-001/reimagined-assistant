@@ -6,7 +6,7 @@ For demonstration purposes, I have chosen to prompt the assistant to answer quer
 
 ### Current Capabilities
 
-The voice assistant is designed to handle queries related to Chime and assist users in navigating the platform. It features three distinct voices, showcasing the variety available for the assistant.
+The voice assistant is designed to handle queries related to Chime and assist users in navigating the platform. It features three distinct voices, showcasing the variety of voices available for the assistant.
 
 ### Implemented Features
 
