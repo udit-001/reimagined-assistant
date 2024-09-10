@@ -118,7 +118,6 @@ micButton.addEventListener('click', async () => {
         await stopRecording()
         micButton.dataset.state = "off"
         micIcon.src = "mic-off.svg"
-
     }
 });
 
@@ -148,11 +147,19 @@ async function startRecording() {
             audioChunks = [];
             const audioUrl = URL.createObjectURL(audioBlob);
             const audio = new Audio(audioUrl);
+            showLoadingMessage(true)
         };
+
+        mediaRecorder.onstart = () => {
+            showLoadingMessage(true, "Recording in progress, mute to hear my response.")
+        }
 
         mediaRecorder.start();
     } catch (error) {
+        micButton.dataset.state = "off"
+        const micIcon = document.querySelector("#micIcon")
+        micIcon.src = "mic-off.svg"
         console.error('Error accessing the microphone', error);
-        alert('Microphone access is required to record audio. Please allow microphone access in your browser settings.');
+        showErrorMessage(true, 'Microphone access is required to record audio. Please allow microphone access in your browser settings.');
     }
 }
