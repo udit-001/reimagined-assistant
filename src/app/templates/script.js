@@ -152,6 +152,7 @@ async function startRecording() {
 
         mediaRecorder.onstart = () => {
             showLoadingMessage(true, "Recording in progress, mute to hear my response.")
+            showErrorMessage(false)
         }
 
         mediaRecorder.start();
