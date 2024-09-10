@@ -20,10 +20,10 @@ The voice assistant is designed to handle queries related to Chime and assist us
 
 - **Backend**: The project is built using FastAPI.
 - **Frontend**: Utilizes Vanilla JavaScript, templates are rendered by the FastAPI backend.
-- **Speech-to-Text**: Performed using Google Vertex AI APIs.
+- **Speech-to-Text**: Performed using [Google Text To Speech AI](https://cloud.google.com/text-to-speech?hl=en) APIs.
 - **Text Generation**: Achieved through GroqAI APIs, utilizing the `llama3-8b-8192` model for chat completion.
-- **Transcription**: Handled by GroqAI APIs using the `distil-whisper-large-v3-en` model.
-- **Integration**: Litellm is used to facilitate seamless connections with various LLM providers.
+- **Transcription**: Handled by [GroqAI](https://groq.com/) APIs using the `distil-whisper-large-v3-en` model.
+- **Integration**: [Litellm](https://docs.litellm.ai/) is used to facilitate seamless connections with various LLM providers.
 
 **Notes**:
 - The `LLM_MODEL_NAME` can be adjusted in the `.env` file to switch the text generation model.
@@ -63,5 +63,5 @@ To run the project locally, follow these steps:
 7. **Set Up Environment Variables**:
    - Copy the example environment file: `cp .env.example .env`
    - Open the `.env` file and set `DEBUG_MODE=true` to enable detailed logs about LLM responses.
-   - Obtain the GroqAI API key by signing up for an account and creating one from the GroqAI console. Paste the API key into the `.env` file.
+   - Obtain the [GroqAI API](https://groq.com/) key by signing up for an account and creating one from the GroqAI console. Paste the API key into the `.env` file.
    - For text-to-speech functionality, create a Google Cloud service account, download the key, and paste the JSON value into the `.env` file. Wrap the JSON value in single quotes. This was done to ease the cloud deployment process on managed cloud services.
